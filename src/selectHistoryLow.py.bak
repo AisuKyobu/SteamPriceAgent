@@ -5,8 +5,7 @@ import os
 
 import streamlit as st
 
-from dotenv import load_dotenv
-load_dotenv()
+from config.settings import settings
 
 searxSearch = SearxSearchWrapper(searx_host="http://127.0.0.1:8888",k=10)
 
@@ -27,7 +26,7 @@ def get_game_id_from_isthereanydeal(game_name: str):
     异常:
     - ConnectionError: 如果 API 请求失败。
     """
-    api_key = os.getenv("IsThereAnyDeal_API_KEY")
+    api_key = settings.get_itad_api_key
     url = f"https://api.isthereanydeal.com/games/search/v1?key={api_key}&title={game_name}"
     response = requests.get(url)
     if response.status_code == 200:
@@ -64,7 +63,7 @@ def get_historical_low_price(game_ids: list[dict]):
     - ValueError: 如果未找到价格数据。
     - ConnectionError: 如果 API 请求失败。
     """
-    api_key = os.getenv("IsThereAnyDeal_API_KEY")
+    api_key = settings.get_itad_api_key
     url = f"https://api.isthereanydeal.com/games/overview/v2?key={api_key}&country=CN&shops=61"
     ids = [game["id"] for game in game_ids]
     response = requests.post(url, json = ids)
