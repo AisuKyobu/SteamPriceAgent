@@ -1,56 +1,50 @@
 import requests
-from schemas.price_result import PriceInfo
-from dotenv import load_dotenv
+from typing import List, Dict
 
-load_dotenv()
+from config.settings import settings
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
+
+BASE_URL = "https://api.isthereanydeal.com"
 
 
-class IsAnyDealClient:
-    BASE_URL = "https://api.isthereanydeal.com"
+def search_games(keyword: str, limit: int = 10) -> List[Dict]:
+    """
+    Search games by keyword from ITAD.
 
-    def __init__(self):
-        if not self.api_key:
-            raise RuntimeError("IsThereAnyDeal_API_KEY not set")
+    Returns a list of:
+    {
+        id: str,
+        title: str,
+        type: str
+    }
+    """
+    url = f"{BASE_URL}/games/search/v1"
 
-    def get_price_info(self, game_name: str) -> PriceInfo:
-        """
-        Query isanydeal and return normalized price info.
-        """
-        # 1. 搜索 plain（isanydeal 的唯一标识）
-        search_resp = requests.get(
-            f"{self.BASE_URL}/games/search/v1",
-            params={
-                "key": self.api_key,
-                "q": game_name,
-            },
-            timeout=10,
+    params = {
+        "key": settings.ITAD_API_KEY,
+        "title": keyword,
+        "limit": limit
+    }
+
+    logger.info(f"Searching ITAD games with keyword: {keyword}")
+
+    resp = requests.get(url, params=params, timeout=10)
+    resp.raise_for_status()
+
+    data = resp.json()
+
+    results = []
+    for item in data:
+        results.append(
+            {
+                "id": item["id"],
+                "title": item["title"],
+                "type": item.get("type", "game"),
+            }
         )
-        search_resp.raise_for_status()
-        search_data = search_resp.json()
 
-        if not search_data:
-            raise ValueError(f"No game found for: {game_name}")
+    logger.info(f"Found {len(results)} candidates from ITAD")
 
-        plain = search_data[0]["plain"]
-
-        # 2. 查询价格
-        price_resp = requests.get(
-            f"{self.BASE_URL}/games/prices/v2",
-            params={
-                "key": self.api_key,
-                "plains": plain,
-                "shops": "steam",
-            },
-            timeout=10,
-        )
-        price_resp.raise_for_status()
-        price_data = price_resp.json()
-
-        game_price = price_data[plain][0]
-
-        return PriceInfo(
-            current_price=game_price["price"]["amount"],
-            historical_low=game_price["lowest"]["amount"],
-            discount_percent=game_price["price"]["cut"],
-            store="Steam",
-        )
+    return results

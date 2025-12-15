@@ -3,10 +3,11 @@ from langchain.messages import HumanMessage
 from schemas.game_entity import GameEntity
 from pathlib import Path
 from typing import Any
-from dotenv import load_dotenv
+from config.settings import Settings
+from utils.logger import get_logger
 import os
 
-load_dotenv()
+logger = get_logger(__name__)
 #查询游戏名称的实体解析器
 class GameEntityResolver:
     def __init__(self, llm: Any):
@@ -26,5 +27,5 @@ class GameEntityResolver:
             raise RuntimeError(f"Error during game name recognition for query '{user_query}': {str(e)}") from e
         
         structured_response = result.get("structured_response", {})
-        
+        logger.info(f"Resolved game entity: {structured_response}")
         return structured_response

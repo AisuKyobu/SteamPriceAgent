@@ -3,10 +3,11 @@ from langchain.messages import HumanMessage
 from schemas.candidate_selection import CandidateSelection
 from pathlib import Path
 from typing import Any, Dict, List
-from dotenv import load_dotenv
 import os
 
-load_dotenv()
+from utils.logger import get_logger
+
+logger = get_logger(__name__)
 
 class CandidateSelectorAgent:
     def __init__(self, llm: Any):
@@ -30,5 +31,6 @@ class CandidateSelectorAgent:
             raise RuntimeError(f"Error during CandidateSelectorAgent making: {str(e)}") from e
         
         structured_response = result.get("structured_response", {})
+        logger.info(f"Candidate selection: {structured_response}")
 
         return structured_response
